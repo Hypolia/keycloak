@@ -1,13 +1,22 @@
-# build environment
-FROM node:18-alpine as build
-WORKDIR /app
-COPY package.json yarn.lock ./
+FROM node:18 as keycloakify_jar_builder
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk && \
+    apt-get install -y maven;
+COPY ./package.json ./yarn.lock /opt/app/
+WORKDIR /opt/app
 RUN yarn install --frozen-lockfile
-COPY . .
-RUN yarn build
+COPY . /opt/app/
+RUN yarn build-keycloak-theme
 
-# production environment
-FROM nginx:stable-alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY --from=build /app/nginx.conf /etc/nginx/conf.d/default.conf
-CMD nginx -g 'daemon off;'
+FROM quay.io/keycloak/keycloak:latest as builder
+WORKDIR /opt/keycloak
+# NOTE: If you are using a version of Keycloak prior to 23 you must use
+# the retrocompat-*.jar. Look inside your target directory there is two jars file
+# one *.jar and the other retrocompat-*.jar
+COPY --from=keycloakify_jar_builder /opt/app/dist_keycloak/target/keycloakify-starter-keycloak-theme-6.0.3.jar /opt/keycloak/providers/
+RUN /opt/keycloak/bin/kc.sh build
+
+FROM quay.io/keycloak/keycloak:latest
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+ENV KC_HOSTNAME=localhost
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh", "start-dev"]
