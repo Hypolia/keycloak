@@ -1,0 +1,1 @@
+import{a as s}from"./useGetClassName-BRJ2lEef.js";const{useGetClassName:t}=s({defaultClasses:{kcHtmlClass:void 0,kcBodyClass:void 0,kcButtonClass:"btn",kcButtonPrimaryClass:"btn-primary",kcButtonLargeClass:"btn-lg",kcButtonDefaultClass:"btn-default"}});export{t as u};
